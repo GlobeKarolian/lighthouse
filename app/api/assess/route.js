@@ -175,7 +175,13 @@ Return ONLY valid JSON. No markdown, no code fences:
 
 export async function POST(request) {
   try {
-    const { storyText, headline, seoGuidelines } = await request.json();
+    const { storyText, headline, seoGuidelines, model } = await request.json();
+
+    const ALLOWED_MODELS = {
+      "sonnet": "claude-sonnet-4-20250514",
+      "opus": "claude-opus-4-20250514",
+    };
+    const selectedModel = ALLOWED_MODELS[model] || ALLOWED_MODELS["sonnet"];
 
     if (!storyText || storyText.trim().length === 0) {
       return Response.json(
@@ -200,7 +206,7 @@ export async function POST(request) {
     const systemPrompt = buildSystemPrompt(seoGuidelines);
 
     const message = await client.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: selectedModel,
       max_tokens: 8192,
       system: systemPrompt,
       messages: [

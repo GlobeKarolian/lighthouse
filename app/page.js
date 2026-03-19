@@ -760,6 +760,7 @@ export default function Home() {
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState("scores");
   const [seoSource, setSeoSource] = useState(null);
+  const [model, setModel] = useState("sonnet");
   const textareaRef = useRef(null);
 
   const wordCount = storyText.trim().split(/\s+/).filter((w) => w.length > 0).length;
@@ -789,6 +790,7 @@ export default function Home() {
           storyText: storyText.trim(),
           headline: headline.trim() || null,
           seoGuidelines,
+          model,
         }),
       });
 
@@ -804,7 +806,7 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }, [storyText, headline]);
+  }, [storyText, headline, model]);
 
   const handleReset = useCallback(() => {
     setAssessment(null);
@@ -845,7 +847,10 @@ export default function Home() {
           </div>
 
           {headline && (
-            <p className="font-sans text-xs text-globe-light uppercase tracking-wide mb-4">Assessing: {headline}</p>
+            <p className="font-sans text-xs text-globe-light uppercase tracking-wide mb-4">
+              Assessing: {headline}
+              {model === "opus" && <span className="ml-2 px-1.5 py-0.5 bg-globe-text text-white rounded text-xs normal-case tracking-normal">Opus</span>}
+            </p>
           )}
 
           <TabNav activeTab={activeTab} onTabChange={setActiveTab} assessment={assessment} />
@@ -904,6 +909,44 @@ export default function Home() {
             className="w-full px-4 py-3 border border-globe-rule rounded bg-white font-serif text-base text-globe-text placeholder:text-globe-light leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-globe-red/30 focus:border-globe-red transition-colors"
             disabled={loading} />
         </div>
+
+        {/* Advanced (collapsed by default) */}
+        <details className="mb-4 group">
+          <summary className="font-sans text-xs text-globe-light cursor-pointer hover:text-globe-muted transition-colors select-none">
+            Advanced options
+          </summary>
+          <div className="mt-3 p-4 bg-white border border-globe-rule rounded-lg">
+            <label className="block font-sans text-xs text-globe-light uppercase tracking-wide mb-2">
+              AI Model
+            </label>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setModel("sonnet")}
+                className={`flex-1 px-4 py-2.5 rounded border font-sans text-sm transition-colors ${
+                  model === "sonnet"
+                    ? "border-globe-red bg-globe-red/5 text-globe-text font-bold"
+                    : "border-globe-rule text-globe-muted hover:border-globe-muted"
+                }`}
+                disabled={loading}
+              >
+                <span className="block font-bold">Sonnet</span>
+                <span className="block text-xs mt-0.5 font-normal text-globe-light">Fast (~20s)</span>
+              </button>
+              <button
+                onClick={() => setModel("opus")}
+                className={`flex-1 px-4 py-2.5 rounded border font-sans text-sm transition-colors ${
+                  model === "opus"
+                    ? "border-globe-red bg-globe-red/5 text-globe-text font-bold"
+                    : "border-globe-rule text-globe-muted hover:border-globe-muted"
+                }`}
+                disabled={loading}
+              >
+                <span className="block font-bold">Opus</span>
+                <span className="block text-xs mt-0.5 font-normal text-globe-light">Deep (~60s, higher cost)</span>
+              </button>
+            </div>
+          </div>
+        </details>
 
         {error && (
           <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded">
