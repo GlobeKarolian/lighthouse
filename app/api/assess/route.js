@@ -125,6 +125,16 @@ Generate a 30-60 second TikTok/Reels script (80-160 words). Requirements:
 - Note (suggested B-roll or visuals) in parentheses.
 Also provide: a video angle pitch (1 sentence), and 3 hook options.
 
+SECTION 8: LOCAL VS NATIONAL SCOPE
+Rate the story on a 0-100 scale where:
+- 0 = Purely local (affects only a specific neighborhood, town, or city)
+- 25 = Metro/regional (relevant across a metro area or state)
+- 50 = Mixed (local story with clear national implications or parallels)
+- 75 = Mostly national (national story with a local angle)
+- 100 = Purely national/international (no specific local connection)
+
+Provide the numeric score and a one-sentence explanation. Also provide 2-3 search keywords that capture the core topic of the story (used to find related coverage on Google News).
+
 OUTPUT FORMAT:
 Return ONLY valid JSON. No markdown, no code fences:
 {
@@ -154,6 +164,11 @@ Return ONLY valid JSON. No markdown, no code fences:
     "hooks": ["...", "...", "..."],
     "script": "...",
     "on_screen_text": ["...", "...", "..."]
+  },
+  "scope": {
+    "score": 0,
+    "explanation": "...",
+    "search_keywords": ["...", "..."]
   }
 }`;
 }

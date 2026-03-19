@@ -37,7 +37,8 @@ const TABS = [
   { id: "gaps", label: "Gaps" },
   { id: "headlines", label: "Headlines" },
   { id: "deck", label: "Arc Deck" },
-  { id: "video", label: "Video" },
+  { id: "video", label: "TikTok Script" },
+  { id: "trending", label: "Trending" },
 ];
 
 // ─── Prototype Banner ────────────────────────────────────────────────────────
@@ -80,7 +81,8 @@ function TabNav({ activeTab, onTabChange, assessment }) {
           (tab.id === "gaps" && (assessment?.information_gaps?.length > 0 || assessment?.follow_up_suggestions?.length > 0)) ||
           (tab.id === "headlines" && assessment?.seo_headlines) ||
           (tab.id === "deck" && assessment?.arc_decks?.length > 0) ||
-          (tab.id === "video" && assessment?.social_video);
+          (tab.id === "video" && assessment?.social_video) ||
+          (tab.id === "trending" && assessment?.scope);
 
         return (
           <button
@@ -172,6 +174,36 @@ function ScoresTab({ assessment }) {
           <div className="h-full rounded-full bg-globe-red animate-fill-bar" style={{ width: `${(totalScore / maxScore) * 100}%` }} />
         </div>
       </div>
+
+      {/* Scope Meter */}
+      {assessment.scope && (
+        <div className="bg-white border border-globe-rule rounded-lg p-5 mb-6">
+          <div className="flex items-center justify-between mb-2">
+            <span className="font-sans text-xs font-bold text-globe-muted uppercase tracking-wide">Story Scope</span>
+            <span className="font-sans text-xs text-globe-light">
+              {assessment.scope.score <= 25 ? "Local" : assessment.scope.score <= 50 ? "Regional" : assessment.scope.score <= 75 ? "National Angle" : "National"}
+            </span>
+          </div>
+          <div className="relative w-full h-3 bg-globe-warmgray rounded-full overflow-hidden mb-2">
+            <div className="absolute inset-0 flex">
+              <div className="flex-1 bg-gradient-to-r from-blue-500 to-blue-400 opacity-20" />
+              <div className="flex-1 bg-gradient-to-r from-blue-400 to-purple-400 opacity-20" />
+              <div className="flex-1 bg-gradient-to-r from-purple-400 to-red-400 opacity-20" />
+              <div className="flex-1 bg-gradient-to-r from-red-400 to-red-500 opacity-20" />
+            </div>
+            <div
+              className="absolute top-0 h-full w-3 bg-globe-text rounded-full border-2 border-white shadow-md transition-all"
+              style={{ left: `calc(${assessment.scope.score}% - 6px)` }}
+            />
+          </div>
+          <div className="flex justify-between font-sans text-xs text-globe-light">
+            <span>Local</span>
+            <span>Regional</span>
+            <span>National</span>
+          </div>
+          <p className="font-serif text-sm text-globe-muted mt-3 leading-relaxed">{assessment.scope.explanation}</p>
+        </div>
+      )}
 
       <div className="bg-white border border-globe-rule rounded-lg p-4 mb-6">
         <AssessmentRadar dimensions={assessment.dimensions} />
@@ -452,6 +484,98 @@ function VideoTab({ assessment }) {
   );
 }
 
+// ─── Trending Tab ────────────────────────────────────────────────────────────
+
+function TrendingTab({ keywords }) {
+  const [articles, setArticles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!keywords || keywords.length === 0) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    fetch("/api/trending", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ keywords }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        setArticles(data.articles || []);
+        if (data.error) setError(data.error);
+      })
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, [keywords]);
+
+  return (
+    <div className="animate-fade-in-up">
+      <div className="bg-white border border-globe-rule rounded-lg p-4 mb-6">
+        <p className="font-serif text-sm text-globe-muted leading-relaxed">
+          Recent Google News coverage on the same topic. See how other outlets are covering this
+          story and identify angles that are getting traction.
+        </p>
+        {keywords && (
+          <div className="flex gap-2 mt-3 flex-wrap">
+            {keywords.map((kw, i) => (
+              <span key={i} className="font-sans text-xs bg-globe-warmgray text-globe-muted px-2.5 py-1 rounded-full">
+                {kw}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {loading && (
+        <div className="text-center py-12">
+          <p className="font-serif text-globe-muted animate-pulse-slow">Searching Google News...</p>
+        </div>
+      )}
+
+      {error && !loading && (
+        <div className="px-4 py-3 bg-red-50 border border-red-200 rounded mb-4">
+          <p className="font-sans text-sm text-red-800">{error}</p>
+        </div>
+      )}
+
+      {!loading && articles.length === 0 && !error && (
+        <div className="text-center py-12">
+          <p className="font-serif text-globe-light">No recent articles found for this topic.</p>
+        </div>
+      )}
+
+      {!loading && articles.length > 0 && (
+        <div className="space-y-3">
+          {articles.map((article, i) => (
+            <a
+              key={i}
+              href={article.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block bg-white border border-globe-rule rounded-lg p-4 hover:border-globe-red/40 transition-colors group"
+            >
+              <p className="font-serif text-base text-globe-text leading-snug group-hover:text-globe-red transition-colors">
+                {article.title}
+              </p>
+              <div className="flex items-center gap-3 mt-2">
+                {article.source && (
+                  <span className="font-sans text-xs font-bold text-globe-muted">{article.source}</span>
+                )}
+                {article.timeAgo && (
+                  <span className="font-sans text-xs text-globe-light">{article.timeAgo}</span>
+                )}
+              </div>
+            </a>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Copy All Results ────────────────────────────────────────────────────────
 
 function formatResultsAsText(assessment) {
@@ -648,6 +772,7 @@ export default function Home() {
           {activeTab === "headlines" && <HeadlinesTab assessment={assessment} seoSource={seoSource} />}
           {activeTab === "deck" && <DeckTab assessment={assessment} />}
           {activeTab === "video" && <VideoTab assessment={assessment} />}
+          {activeTab === "trending" && <TrendingTab keywords={assessment?.scope?.search_keywords} />}
 
           <footer className="mt-12 pt-4 border-t border-globe-rule text-center">
             <p className="font-sans text-xs text-globe-light">
