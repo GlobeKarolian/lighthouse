@@ -8,13 +8,15 @@ import {
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const LOADING_MESSAGES = [
-  "Reading your story...",
-  "Weighing the facts...",
-  "Considering the angles...",
-  "Crafting headlines...",
-  "Writing the TikTok script...",
-  "Building assessment...",
+const LOADING_PHASES = [
+  { msg: "Reading your story", detail: "Parsing structure and content", duration: 3, icon: "01" },
+  { msg: "Scoring dimensions", detail: "Inform, Connect, Explain, Investigate, Enrich, Provoke", duration: 5, icon: "02" },
+  { msg: "Reviewing writing style", detail: "Checking clarity, structure, attribution", duration: 4, icon: "03" },
+  { msg: "Identifying gaps", detail: "What questions would a reader ask?", duration: 3, icon: "04" },
+  { msg: "Generating SEO headlines", detail: "Search, Discover, and Google News variants", duration: 5, icon: "05" },
+  { msg: "Writing Arc deck options", detail: "Short summaries for the CMS", duration: 3, icon: "06" },
+  { msg: "Drafting TikTok script", detail: "Hook, script, on-screen text", duration: 4, icon: "07" },
+  { msg: "Finding trending coverage", detail: "Scanning Google News for related stories", duration: 3, icon: "08" },
 ];
 
 const DIMENSION_COLORS = {
@@ -641,26 +643,108 @@ function formatResultsAsText(assessment) {
 // ─── Loading State ───────────────────────────────────────────────────────────
 
 function LoadingState() {
-  const [msgIndex, setMsgIndex] = useState(0);
+  const [phaseIndex, setPhaseIndex] = useState(0);
+  const [elapsed, setElapsed] = useState(0);
+  const totalDuration = LOADING_PHASES.reduce((s, p) => s + p.duration, 0);
+
   useEffect(() => {
-    let i = 0;
-    const interval = setInterval(() => {
-      i = Math.min(i + 1, LOADING_MESSAGES.length - 1);
-      setMsgIndex(i);
-    }, 4000);
-    return () => clearInterval(interval);
+    const startTime = Date.now();
+    const timer = setInterval(() => {
+      const secs = (Date.now() - startTime) / 1000;
+      setElapsed(secs);
+
+      // Advance phase based on cumulative durations
+      let cumulative = 0;
+      for (let i = 0; i < LOADING_PHASES.length; i++) {
+        cumulative += LOADING_PHASES[i].duration;
+        if (secs < cumulative) {
+          setPhaseIndex(i);
+          break;
+        }
+        if (i === LOADING_PHASES.length - 1) setPhaseIndex(i);
+      }
+    }, 200);
+    return () => clearInterval(timer);
   }, []);
 
+  const progress = Math.min((elapsed / totalDuration) * 100, 98);
+  const phase = LOADING_PHASES[phaseIndex];
+
   return (
-    <div className="flex flex-col items-center justify-center py-20">
-      <div className="flex space-x-2 mb-6">
-        {[0, 1, 2].map((i) => (
-          <div key={i} className="w-2.5 h-2.5 rounded-full bg-globe-red"
-            style={{ animation: "pulse-slow 1.4s ease-in-out infinite", animationDelay: `${i * 0.2}s` }} />
-        ))}
+    <div className="py-8">
+      {/* Progress bar */}
+      <div className="w-full h-1.5 bg-globe-warmgray rounded-full overflow-hidden mb-8">
+        <div
+          className="h-full bg-globe-red rounded-full"
+          style={{
+            width: `${progress}%`,
+            transition: "width 0.4s ease-out",
+          }}
+        />
       </div>
-      <p className="font-serif text-lg text-globe-muted animate-pulse-slow">{LOADING_MESSAGES[msgIndex]}</p>
-      <p className="font-sans text-xs text-globe-light mt-3">This takes 15-30 seconds</p>
+
+      {/* Phase list */}
+      <div className="space-y-0">
+        {LOADING_PHASES.map((p, i) => {
+          const isActive = i === phaseIndex;
+          const isDone = i < phaseIndex;
+          const isFuture = i > phaseIndex;
+
+          return (
+            <div
+              key={i}
+              className={`flex items-center gap-4 px-4 py-3 rounded-lg transition-all duration-300 ${
+                isActive ? "bg-white border border-globe-rule shadow-sm" : ""
+              }`}
+              style={{
+                opacity: isFuture ? 0.3 : 1,
+                transform: isActive ? "scale(1)" : "scale(0.98)",
+              }}
+            >
+              {/* Step number / check */}
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 font-sans text-xs font-bold transition-all duration-300 ${
+                isDone
+                  ? "bg-green-100 text-green-700"
+                  : isActive
+                  ? "bg-globe-red text-white"
+                  : "bg-globe-warmgray text-globe-light"
+              }`}>
+                {isDone ? (
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M2 7L5.5 10.5L12 3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                ) : (
+                  p.icon
+                )}
+              </div>
+
+              {/* Text */}
+              <div className="flex-1 min-w-0">
+                <p className={`font-sans text-sm leading-tight transition-colors duration-300 ${
+                  isActive ? "text-globe-text font-bold" : isDone ? "text-globe-muted" : "text-globe-light"
+                }`}>
+                  {p.msg}
+                  {isActive && (
+                    <span className="inline-flex ml-1">
+                      <span className="animate-pulse-slow">...</span>
+                    </span>
+                  )}
+                </p>
+                {isActive && (
+                  <p className="font-sans text-xs text-globe-light mt-0.5">{p.detail}</p>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Elapsed time */}
+      <div className="text-center mt-6">
+        <p className="font-sans text-xs text-globe-light tabular-nums">
+          {Math.floor(elapsed)}s elapsed
+        </p>
+      </div>
     </div>
   );
 }
